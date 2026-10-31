@@ -25,9 +25,8 @@
 #include "MQTTClient.h"
 #include "mqtt_tls.h"
 
-/* ===== 部署前必须修改：以下凭据在仓库中为占位值，烧录前请换成现场真实配置 ===== */
 /* MQTT（EMQX Serverless - TLS） */
-#define MQTT_BROKER_IP   "YOUR_BROKER_HOST.emqxsl.cn"
+#define MQTT_BROKER_IP   "u7909e19.ala.cn-hangzhou.emqxsl.cn"
 #define MQTT_BROKER_PORT 8883
 #define MQTT_TOPIC       "gas/sensor/data"      /* 本板汇总上报后端 */
 #define BH1750_I2C_IDX   0
@@ -39,16 +38,16 @@ static uint8_t g_bh1750I2cAddr = 0x23;
 #define MQTT_TOPIC_AGV   "sensor/agv/data"      /* 订阅 AGV 从节点数据 */
 #define MQTT_TOPIC_CMD   "plant/gateway/command" /* 订阅控制台指令 */
 #define MQTT_CLIENT_ID_PREFIX "gw-"
-#define MQTT_USERNAME    "YOUR_MQTT_USERNAME"
-#define MQTT_PASSWORD    "YOUR_MQTT_PASSWORD"
+#define MQTT_USERNAME    "jzy0606"
+#define MQTT_PASSWORD    "jzy0606"
 #define MQTT_CMD_TIMEOUT 5000
 #define MQTT_KEEP_ALIVE  60
 #define MQTT_RECONNECT_INTERVAL 30
 #define AGV_DATA_STALE_SEC 10   /* 配合从节点约 2s 心跳；5s 易误判，改为 10s */
 
 /* WiFi */
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PSK  "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "CPE-C562"
+#define WIFI_PSK  "jzy20050606"
 #define WIFI_SCAN_TIMEOUT 15
 #define WIFI_CONNECT_TIMEOUT 15
 #define WIFI_HOSTNAME "Plant-Gateway"

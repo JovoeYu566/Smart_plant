@@ -42,7 +42,7 @@
 **设备端 `Hardware`**
 
 - 主节点 `plant_gateway`：DHT11 / MQ2 / 烟雾 DO / BH1750 光照 / PIR / 光电计数多源采集，汇总成一帧 JSON 上报后端
-- 从节点 `agv_node` / `agv_servo_node`：四向超声波避障、电机差速与舵机转向、火焰/气体/烟雾检测
+- 从节点 `agv_servo_node`：底盘电机差速与舵机转向、四向超声波避障、DHT11 温湿度、火焰/气体/烟雾检测
 - 下行指令落地：灯控、蜂鸣、AGV 急停/恢复、软复位、维护模式等动作
 - 断线自愈：WiFi 扫描重连、MQTT 重连（含 mbedTLS 资源回收）、AGV 心跳超时自动置离线
 
@@ -123,11 +123,9 @@
 └── Hardware/                         # OpenHarmony 设备端（Hi3861）
     ├── README.md                     # 编译、烧录、引脚与联调说明
     └── app/                          # 对应 OH 源码树 applications/sample/wifi-iot/app
-        ├── BUILD.gn                  # 选择参与编译的应用
+        ├── BUILD.gn                  # 选择参与编译的节点
         ├── plant_gateway/            # 主节点（中控汇总网关）
-        ├── agv_node/                 # 从节点 AGV
-        ├── agv_servo_node/           # AGV 舵机/电机执行节点
-        └── dht11_test/ led_test/ led_interrupt_board/   # 外设验证例程
+        └── agv_servo_node/           # 从节点 AGV（电机/舵机 + 避障）
 ```
 
 ## 快速开始
@@ -208,7 +206,7 @@ static readonly DEFAULT_BASE_URL: string = 'http://你的电脑局域网IP:8080'
 ### 6. 设备端固件（可选）
 
 1. 把 `Hardware/app/*` 复制到 OpenHarmony 源码的 `applications/sample/wifi-iot/app/`
-2. 在 `app/BUILD.gn` 的 `features` 里**只保留一个**应用（`plant_gateway` / `agv_node` / `agv_servo_node`）
+2. 在 `app/BUILD.gn` 的 `features` 里**只保留一个**节点：`plant_gateway:plant_gateway`（主节点）或 `agv_servo_node:agv_servo_node`（从节点）
 3. 编译：
 
 ```bash
@@ -217,7 +215,7 @@ static readonly DEFAULT_BASE_URL: string = 'http://你的电脑局域网IP:8080'
 
 产物为 `out/hispark_pegasus/wifiiot_hispark_pegasus/Hi3861_wifiiot_app_allinone.bin`，用 DevEco Device Tool / HiBurn 烧录。
 
-> **烧录前必改**：仓库中的 WiFi 与 EMQX 凭据已替换为 `YOUR_WIFI_SSID` / `YOUR_MQTT_PASSWORD` 等占位值，搜 `YOUR_` 定位全部位置。引脚表、MQTT 报文与联调注意事项见 [`Hardware/README.md`](Hardware/README.md)。
+> 设备端代码**保持原样未做脱敏**，WiFi 与 EMQX 参数以明文写在 `gateway_main.c` / `agv_servo_main.c` 顶部的宏里，换现场时直接改这几行。由于本仓库为公开仓库，建议演示结束后更换相关密码。引脚表、MQTT 报文与联调注意事项见 [`Hardware/README.md`](Hardware/README.md)。
 
 ## API 一览
 

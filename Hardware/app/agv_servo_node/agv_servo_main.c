@@ -49,16 +49,15 @@
 #define MOTOR_IN3_GPIO 2
 #define MOTOR_IN4_GPIO 10
 #define DHT11_GPIO 8
-/* ===== 部署前必须修改：以下凭据在仓库中为占位值，烧录前请换成现场真实配置 ===== */
-#define MQTT_BROKER_IP "YOUR_BROKER_HOST.emqxsl.cn"
+#define MQTT_BROKER_IP "u7909e19.ala.cn-hangzhou.emqxsl.cn"
 #define MQTT_BROKER_PORT 8883
 #define MQTT_TOPIC_AGV "sensor/agv/data"
 #define MQTT_TOPIC_CMD "plant/gateway/command"
 #define MQTT_CLIENT_ID_PREFIX "agv-"
-#define MQTT_USERNAME "YOUR_MQTT_USERNAME"
-#define MQTT_PASSWORD "YOUR_MQTT_PASSWORD"
-#define AGV_WIFI_SSID "YOUR_WIFI_SSID"
-#define AGV_WIFI_PSK "YOUR_WIFI_PASSWORD"
+#define MQTT_USERNAME "jzy0606"
+#define MQTT_PASSWORD "jzy0606"
+#define AGV_WIFI_SSID "CPE-C562"
+#define AGV_WIFI_PSK "jzy20050606"
 #define AGV_WIFI_SCAN_TIMEOUT 15
 #define AGV_WIFI_CONNECT_TIMEOUT 15
 #define AGV_WIFI_HOSTNAME "AGV-Node"

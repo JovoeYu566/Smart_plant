@@ -2,38 +2,24 @@
 
 本目录是智慧工厂项目的**设备端应用层代码**，运行在 Hi3861V100上，基于 **OpenHarmony 4.1 Release（`ohos:mini` 轻量系统）**，用 C + CMSIS-RTOS2 编写，通过 MQTT/TLS 与后端交换工况与控制指令。
 
-> 这里只放**自定义应用**，不含 OpenHarmony 源码树本身（那份有数 GB）。编译前需要把本目录挂回 OpenHarmony 源码。
+> 仓库只收录**当前在用的两个节点**：主节点 `plant_gateway` 与从节点 `agv_servo_node`；早期版本的 `agv_node` 已作废，不在仓库中维护。OpenHarmony 源码树本身（数 GB）不在仓库内，编译时需要把本目录挂回去。
 
 ## 目录结构
 
 ```
 Hardware/
 └── app/                        # 对应 OH 源码树里的 applications/sample/wifi-iot/app
-    ├── BUILD.gn                # 组件入口：用哪个应用参与编译就在这里放开/注释
+    ├── BUILD.gn                # 组件入口：用哪个应用参与编译在这里放开/注释
     ├── plant_gateway/          # 主节点（中控汇总网关）
-    └── agv_servo_node/         # AGV 执行节点
+    └── agv_servo_node/         # 从节点 AGV（电机/舵机驱动 + 避障）
 ```
-
-各应用职责：
 
 | 目录 | 角色 | 主要功能 |
 |---|---|---|
-| `plant_gateway` | 主节点 | 采集 DHT11 / MQ2 / 烟雾 DO / BH1750 光照 / PIR / 光电计数，订阅 AGV 从节点数据后**汇总成一帧 JSON 上报后端**；订阅控制指令并驱动 PCF8574 拓展板灯、蜂鸣器、软复位 |
-| `agv_node` | 从节点 | 四路超声波测距 + SHT20 温湿度 + PCF8574 火焰/气体/烟雾，按固定周期上报 AGV 状态 |
-| `agv_servo_node` | 从节点 | 底盘电机 PWM 差速驱动、舵机转向、DHT11、超声波避障，急停与恢复由后端指令触发 |
-| `dht11_test` / `led_test` / `led_interrupt_board` | 调试 | 单传感器/单外设验证用，正式联调时不需要编进去 |
+| `plant_gateway` | 主节点 | 采集 DHT11 / MQ2 / 烟雾 DO / BH1750 光照 / PIR / 光电计数；汇总从节点数据后**一帧 JSON 上报后端**；订阅控制指令，驱动 PCF8574 拓展板灯、蜂鸣器、软复位 |
+| `agv_servo_node` | 从节点 | 底盘电机 PWM 差速驱动、舵机转向、超声波避障、DHT11、PCF8574 火焰/气体/烟雾；周期上报 AGV 状态 |
 
-## 部署前必改：凭据占位
-
-仓库中的 WiFi 与 EMQX 凭据**全部替换为占位值**，直接编译会连不上，烧录前请改成现场真实配置：
-
-| 文件 | 需要修改的宏 |
-|---|---|
-| `app/plant_gateway/gateway_main.c` | `WIFI_SSID`、`WIFI_PSK`、`MQTT_BROKER_IP`、`MQTT_USERNAME`、`MQTT_PASSWORD` |
-| `app/agv_node/agv_main.c` | 同上 |
-| `app/agv_servo_node/agv_servo_main.c` | `AGV_WIFI_SSID`、`AGV_WIFI_PSK`、`MQTT_BROKER_IP`、`MQTT_USERNAME`、`MQTT_PASSWORD` |
-
-占位值形如 `YOUR_WIFI_SSID` / `YOUR_MQTT_PASSWORD`，搜 `YOUR_` 即可定位全部位置。
+每个节点目录自带 `BUILD.gn`（组件定义）与 `mqtt_tls.c`（mbedTLS 封装），可直接放回源码树编译。
 
 ## 编译步骤
 
@@ -50,19 +36,20 @@ repo sync -c
 cp -r Hardware/app/* <OH_ROOT>/applications/sample/wifi-iot/app/
 ```
 
-### 3. 选择要编译的应用
+### 3. 选择要编译的节点
 
-编辑 `app/BUILD.gn`，`features` 里**只保留一个**（Hi3861 的 `lite_component("app")` 是单入口，同时开多个会互相抢占 `HdfInitialize` / 主任务）：
+编辑 `app/BUILD.gn`，`features` 里**只保留一个**（Hi3861 的 `lite_component("app")` 是单入口，同时开多个会互相抢占初始化流程）：
 
 ```gn
 lite_component("app") {
   features = [
-    "plant_gateway:plant_gateway",
+    "plant_gateway:plant_gateway",     # 主节点
+    # "agv_servo_node:agv_servo_node", # 从节点
   ]
 }
 ```
 
-可选项：`plant_gateway:plant_gateway`、`agv_node:agv_node`、`agv_servo_node:agv_servo_node`、`dht11_test:dht11_test`、`led_test:led_test`、`led_interrupt_board:a_led_interrupt_board`。
+> 仓库里的 `BUILD.gn` 保持原样（当前激活的是 `led_interrupt_board` 例程，该例程未收录），编译前请按上面的写法改成你要烧的节点。
 
 ### 4. 编译
 
@@ -79,7 +66,18 @@ out/hispark_pegasus/wifiiot_hispark_pegasus/Hi3861_wifiiot_app_allinone.bin
 
 ### 5. 烧录
 
-用 DevEco Device Tool 或 HiBurn 打开上面的 `allinone.bin`，选 Hi3861 串口（波特率 921600 或 115200）烧录后复位。
+用 DevEco Device Tool 或 HiBurn 打开上面的 `allinone.bin`，选 Hi3861 串口（921600 或 115200）烧录后复位。
+
+## 现场配置（WiFi / MQTT）
+
+代码中的网络参数是**直接硬编码**在源文件顶部的宏里，换现场时改这几行即可：
+
+| 文件 | 宏 |
+|---|---|
+| `app/plant_gateway/gateway_main.c` | `WIFI_SSID`、`WIFI_PSK`、`MQTT_BROKER_IP`、`MQTT_BROKER_PORT`、`MQTT_USERNAME`、`MQTT_PASSWORD` |
+| `app/agv_servo_node/agv_servo_main.c` | `AGV_WIFI_SSID`、`AGV_WIFI_PSK`、`MQTT_BROKER_IP`、`MQTT_BROKER_PORT`、`MQTT_USERNAME`、`MQTT_PASSWORD` |
+
+> ⚠️ 本仓库为公开仓库，且这些凭据以明文写在源码中。**建议在比赛/演示结束后更换 EMQX 账号密码与热点密码**，或把仓库设为私有；如只想要一份干净的代码副本，可把上述宏替换成占位值后再推送。
 
 ## 引脚与外设
 
@@ -109,16 +107,13 @@ out/hispark_pegasus/wifiiot_hispark_pegasus/Hi3861_wifiiot_app_allinone.bin
 | 电机 IN1 / IN2 / IN3 / IN4 | GPIO1 / GPIO0 / GPIO2 / GPIO10 |
 | DHT11 | GPIO8 |
 | PCF8574 | P1 火焰 / P2 气体 / P3 烟雾 |
-
-### 从节点 `agv_node`
-
-I2C0 共享总线（SDA=GPIO13 / SCL=GPIO14）：OLED SSD1306、SHT20、两片 PCF8574；四路超声波按「前 / 后 / 左 / 右」顺序映射。
+| I2C0 | SDA=GPIO13 / SCL=GPIO14（OLED） |
 
 ## MQTT 主题
 
 | 方向 | 主题 | 发布者 | 订阅者 |
 |---|---|---|---|
-| 上行（AGV → 网关） | `sensor/agv/data`（`agv_node` 为 `sensor/qst/data`） | 从节点 | 主节点 |
+| 上行（AGV → 网关） | `sensor/agv/data` | `agv_servo_node` | 主节点 |
 | 上行（网关 → 后端） | `gas/sensor/data` | 主节点 | 后端 `MqttClientManager` |
 | 下行（后端 → 设备） | `plant/gateway/command` | 后端 | 主节点 / 从节点 |
 
@@ -140,9 +135,9 @@ I2C0 共享总线（SDA=GPIO13 / SCL=GPIO14）：OLED SSD1306、SHT20、两片 P
 
 ## 与后端联调注意点
 
-- **AGV 离线判定**：主节点用 `AGV_DATA_STALE_SEC = 10` 秒判定从节点掉线，与后端 `online-timeout-ms = 60000` 相互独立，两边都会各自置离线。
+- **AGV 离线判定**：主节点用 `AGV_DATA_STALE_SEC = 10` 秒判定从节点掉线，后端 `online-timeout-ms = 60000` 独立判定，两边各自置离线。
 - **本地告警阈值不同**：主节点 `ALARM_THRESHOLD = 1200`（ADC 原始值，触发本板蜂鸣与灯闪），后端默认 `gas-adc-threshold = 200`。前端展示以后端裁定结果为准，设备端只负责现场声光。
-- **TLS**：EMQX Serverless 走 8883 端口，`mqtt_tls.c` 用 mbedTLS 做加密，但当前配置为 `MBEDTLS_SSL_VERIFY_NONE`（只加密、不校验服务端证书）。正式部署建议改为加载 CA 并开启校验。
+- **TLS**：EMQX Serverless 走 8883 端口，`mqtt_tls.c` 用 mbedTLS 做加密，但当前为 `MBEDTLS_SSL_VERIFY_NONE`（只加密、不校验服务端证书），正式部署建议加载 CA 并开启校验。
 - **I2C 地址**：OLED 在 `oled_ssd1306.c` 里写死 `OLED_I2C_ADDR 0x78`（即 7 位地址 0x3C），换屏时注意修改。
 - **指令动作**：设备端支持 `LIGHT_ON/OFF/TOGGLE/AUTO`、`ALARM_ACK/MUTE/UNMUTE`、`BUZZER_ON/OFF`、`AGV_ESTOP/RESUME/GOTO`、`CARGO_RESET`、`GATEWAY_REBOOT/STATUS_QUERY`、`SENSOR_CALIBRATE`、`DATA_SNAPSHOT_FORCE`、`MAINTENANCE_MODE_ON/OFF`；其中 `LIGHT_AUTO` 仅设备端支持，后端白名单未收录。
 
@@ -152,6 +147,6 @@ I2C0 共享总线（SDA=GPIO13 / SCL=GPIO14）：OLED SSD1306、SHT20、两片 P
 |---|---|
 | 编译报 `gn` 找不到组件 | `app/BUILD.gn` 里的名字要和目录名一致，且只开一个 |
 | 串口一直打印 WiFi 扫描 | 热点名写错，或热点为 5 GHz（Hi3861 仅支持 2.4 GHz） |
-| 连上 WiFi 但 MQTT 失败 | 检查 `MQTT_BROKER_IP` / 用户名密码，以及设备时间与 TLS 证书是否匹配 |
+| 连上 WiFi 但 MQTT 失败 | 检查 `MQTT_BROKER_IP` / 账号密码；确认 EMQX 实例未过期 |
 | OLED 不亮 | 确认 GPIO13/14 未被复用，且 `OLED_I2C_ADDR`（0x78）与屏幕一致 |
 | 烧录后无输出 | 波特率改成 115200 再看串口日志 |

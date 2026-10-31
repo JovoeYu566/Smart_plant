@@ -1,6 +1,6 @@
-# Hardware —— OpenHarmony 设备端（Hi3861 / HiSpark Pegasus）
+# Hardware —— OpenHarmony 设备端（Hi3861）
 
-本目录是智慧工厂项目的**设备端应用层代码**，运行在 Hi3861V100（HiSpark Pegasus / 润和 Pegasus 开发板）上，基于 **OpenHarmony 4.1 Release（`ohos:mini` 轻量系统）**，用 C + CMSIS-RTOS2 编写，通过 MQTT/TLS 与后端交换工况与控制指令。
+本目录是智慧工厂项目的**设备端应用层代码**，运行在 Hi3861V100上，基于 **OpenHarmony 4.1 Release（`ohos:mini` 轻量系统）**，用 C + CMSIS-RTOS2 编写，通过 MQTT/TLS 与后端交换工况与控制指令。
 
 > 这里只放**自定义应用**，不含 OpenHarmony 源码树本身（那份有数 GB）。编译前需要把本目录挂回 OpenHarmony 源码。
 
@@ -11,11 +11,7 @@ Hardware/
 └── app/                        # 对应 OH 源码树里的 applications/sample/wifi-iot/app
     ├── BUILD.gn                # 组件入口：用哪个应用参与编译就在这里放开/注释
     ├── plant_gateway/          # 主节点（中控汇总网关）
-    ├── agv_node/               # 从节点 AGV（四向超声波 + 温湿度 + 气体/火焰）
-    ├── agv_servo_node/         # AGV 舵机/电机执行节点（避障 + 转向）
-    ├── dht11_test/             # DHT11 温湿度单独测试
-    ├── led_interrupt_board/    # 中断点灯例程
-    └── led_test/               # GPIO 点灯例程
+    └── agv_servo_node/         # AGV 执行节点
 ```
 
 各应用职责：

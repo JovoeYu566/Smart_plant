@@ -11,7 +11,7 @@ Hardware/
 └── app/                        # 对应 OH 源码树里的 applications/sample/wifi-iot/app
     ├── BUILD.gn                # 组件入口：用哪个应用参与编译在这里放开/注释
     ├── plant_gateway/          # 主节点（中控汇总网关）
-    └── agv_servo_node/         # 从节点 AGV（电机/舵机驱动 + 避障）
+    └── agv_servo_node/         # 从节点 AGV（移动监测/电机/舵机驱动 + 避障）
 ```
 
 | 目录 | 角色 | 主要功能 |
@@ -77,7 +77,6 @@ out/hispark_pegasus/wifiiot_hispark_pegasus/Hi3861_wifiiot_app_allinone.bin
 | `app/plant_gateway/gateway_main.c` | `WIFI_SSID`、`WIFI_PSK`、`MQTT_BROKER_IP`、`MQTT_BROKER_PORT`、`MQTT_USERNAME`、`MQTT_PASSWORD` |
 | `app/agv_servo_node/agv_servo_main.c` | `AGV_WIFI_SSID`、`AGV_WIFI_PSK`、`MQTT_BROKER_IP`、`MQTT_BROKER_PORT`、`MQTT_USERNAME`、`MQTT_PASSWORD` |
 
-> ⚠️ 本仓库为公开仓库，且这些凭据以明文写在源码中。**建议在比赛/演示结束后更换 EMQX 账号密码与热点密码**，或把仓库设为私有；如只想要一份干净的代码副本，可把上述宏替换成占位值后再推送。
 
 ## 引脚与外设
 

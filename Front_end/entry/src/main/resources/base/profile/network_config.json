@@ -1,0 +1,8 @@
+{
+  "networkSecurityConfig": {
+    "cleartextTrafficPermitted": true,
+    "baseConfig": {
+      "cleartextTrafficPermitted": true
+    }
+  }
+}

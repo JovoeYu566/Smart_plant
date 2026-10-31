@@ -1,0 +1,56 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+
+spring:
+  application:
+    name: smart-plant-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/smart_plant?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+smart-plant:
+  jwt:
+    # 生产环境务必通过环境变量 JWT_SECRET 注入至少 32 字节随机串
+    secret: ${JWT_SECRET:smart-plant-jwt-secret-change-me-in-production-32bytes-min}
+    expire-hours: 24
+  gateway:
+    api-key: ${GATEWAY_API_KEY:gateway-dev-key-change-me}
+  mqtt:
+    enabled: ${MQTT_ENABLED:true}
+    broker: ${MQTT_BROKER:localhost}
+    port: ${MQTT_PORT:8883}
+    username: ${MQTT_USERNAME:}
+    password: ${MQTT_PASSWORD:}
+    client-id: ${MQTT_CLIENT_ID:smart-plant-backend-01}
+    topics:
+      - "gas/sensor/data"
+    command-topic: "plant/gateway/command"
+    qos: 0
+  alarm:
+    gas-adc-threshold: 200
+    gas-voltage-threshold: 0.5
+    min-distance-cm: 20
+  ingest:
+    # 历史快照每 3 秒最多写一次；device_latest 每条 MQTT 都立刻更新
+    snapshot-interval-ms: 3000
+    # 常规告警节流；主/从在线状态变化会绕过此间隔立刻判定
+    alarm-interval-ms: 300
+    # 超过该时间未收到工况报文 → 主/从强制离线（需大于设备正常上报周期，默认 60s）
+    online-timeout-ms: 60000
+    online-check-interval-ms: 5000
+
+logging:
+  level:
+    com.smartplant: INFO
+    com.smartplant.service.PlantService: INFO
+    org.eclipse.paho: WARN

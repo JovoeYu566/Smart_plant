@@ -1,0 +1,17 @@
+# 编译产物
+out/
+build/
+*.o
+*.obj
+*.bin
+*.elf
+*.map
+*.a
+*.so
+
+# 日志
+*.log
+
+# IDE
+.vscode/
+.idea/

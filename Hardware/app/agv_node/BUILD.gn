@@ -1,0 +1,30 @@
+# 智慧工业 - AGV 从节点（agv_node）
+# 复制 paho MQTT 静态库到本 demo 输出目录
+mqtt_lib = [ "//device/board/bearpi/bearpi_hm_nano/third_party/libs/libpahomqtt_static.a" ]
+copy("mqtt_lib_copy") {
+  sources = mqtt_lib
+  outputs = [ "$target_gen_dir/libpahomqtt_static.a" ]
+}
+
+static_library("agv_node") {
+  sources = [
+    "agv_main.c",
+    "sht20.c",
+    "oled_ssd1306.c",
+    "mqtt_tls.c",
+    "pcf8574.c",
+  ]
+  include_dirs = [
+    "//base/iothardware/peripheral/interfaces/inner_api",
+    "//device/board/bearpi/bearpi_hm_nano/iot_hardware_hals/include",
+    "//device/board/bearpi/bearpi_hm_nano/third_party/paho_mqtt/MQTTClient-C/src",
+    "//device/board/bearpi/bearpi_hm_nano/third_party/paho_mqtt/MQTTPacket/src",
+    "//device/soc/hisilicon/hi3861v100/sdk_liteos/include",
+    "//device/soc/hisilicon/hi3861v100/sdk_liteos/third_party/mbedtls/include",
+    "//foundation/communication/wifi_lite/interfaces/wifiservice",
+    "./",
+  ]
+  deps = [ ":mqtt_lib_copy" ]
+  lib_dirs = [ "$target_gen_dir" ]
+  libs = [ "pahomqtt_static" ]
+}

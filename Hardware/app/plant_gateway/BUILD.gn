@@ -1,0 +1,29 @@
+# 智慧工业 - 中控网关汇总端（plant_gateway）
+# 复制paho MQTT静态库到输出目录
+mqtt_lib = [ "//device/board/bearpi/bearpi_hm_nano/third_party/libs/libpahomqtt_static.a" ]
+copy("mqtt_lib_copy") {
+  sources = mqtt_lib
+  outputs = [ "$target_gen_dir/libpahomqtt_static.a" ]
+}
+
+static_library("plant_gateway") {
+    sources = [
+        "gateway_main.c",
+        "oled_ssd1306.c",
+        "mqtt_tls.c",
+        "pcf8574.c",
+    ]
+    include_dirs = [
+        "//base/iothardware/peripheral/interfaces/inner_api",
+        "//device/board/bearpi/bearpi_hm_nano/iot_hardware_hals/include",
+        "//device/board/bearpi/bearpi_hm_nano/third_party/paho_mqtt/MQTTClient-C/src",
+        "//device/board/bearpi/bearpi_hm_nano/third_party/paho_mqtt/MQTTPacket/src",
+        "//device/soc/hisilicon/hi3861v100/sdk_liteos/include",
+        "//device/soc/hisilicon/hi3861v100/sdk_liteos/third_party/mbedtls/include",
+        "//foundation/communication/wifi_lite/interfaces/wifiservice",
+        "./",
+    ]
+    deps = [ ":mqtt_lib_copy" ]
+    lib_dirs = [ "$target_gen_dir" ]
+    libs = [ "pahomqtt_static" ]
+}

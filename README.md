@@ -2,7 +2,7 @@
 
 面向中小工厂安全值班场景的 **端 — 边 — 云** 协同系统：主/从节点采集多源工况，EMQX 以 MQTT/TLS 承载上行工况与下行控制，Spring Boot 完成入库、告警裁定、鉴权与审计，OpenHarmony 单工程同时交付 **手机巡检端** 与 **平板监控大屏**。
 
-> 仓库只包含 `Back_end`（后端）与 `Front_end`（鸿蒙前端）两部分源代码。
+> 仓库包含 `Back_end`（后端）、`Front_end`（鸿蒙前端）与 `Hardware`（OpenHarmony 设备端固件）三部分源代码。
 
 ---
 
@@ -38,6 +38,13 @@
 - 约 2 秒轮询最新工况与未恢复告警，断流时强制显示离线占位 `--`
 - Token 与服务器地址本地 Preferences 持久化，危险操作二次确认
 - 支持 `phone` / `tablet` / `2in1` 设备类型
+
+**设备端 `Hardware`**
+
+- 主节点 `plant_gateway`：DHT11 / MQ2 / 烟雾 DO / BH1750 光照 / PIR / 光电计数多源采集，汇总成一帧 JSON 上报后端
+- 从节点 `agv_node` / `agv_servo_node`：四向超声波避障、电机差速与舵机转向、火焰/气体/烟雾检测
+- 下行指令落地：灯控、蜂鸣、AGV 急停/恢复、软复位、维护模式等动作
+- 断线自愈：WiFi 扫描重连、MQTT 重连（含 mbedTLS 资源回收）、AGV 心跳超时自动置离线
 
 ## 系统架构
 
@@ -77,6 +84,7 @@
 | 消息 | Eclipse Paho MQTT 1.2.5、EMQX（TLS 8883） |
 | 鉴权 | JJWT 0.12.6、BCrypt |
 | 前端 | OpenHarmony ArkTS（API 12+）、DevEco Studio |
+| 设备端 | OpenHarmony 4.1（`ohos:mini`）、Hi3861V100 / HiSpark Pegasus、mbedTLS、CMSIS-RTOS2 |
 | 运行时 | **JDK 17**（`pom.xml` 已用 enforcer 锁定，非 17 直接构建失败） |
 
 ## 目录结构
@@ -101,17 +109,25 @@
 │           ├── application.yml           # 仅环境变量占位，无真实密钥
 │           ├── application-local.yml.example
 │           └── schema*.sql               # 建表与增量脚本
-└── Front_end/                        # OpenHarmony 前端
-    ├── AppScope/
-    └── entry/src/main/
-        ├── ets/
-        │   ├── common/               # 配置、主题、会话、显示映射
-        │   ├── components/           # 平板面板、共用控制台
-        │   ├── pages/                # Index / Login / phone / tablet
-        │   ├── service/              # HttpClient、PlantApi、ControlApi、告警服务
-        │   ├── store/                # AppStore、PrefStore
-        │   └── model/                # 数据模型
-        └── resources/                # 字符串、颜色、图标、页面配置
+├── Front_end/                        # OpenHarmony 前端
+│   ├── AppScope/
+│   └── entry/src/main/
+│       ├── ets/
+│       │   ├── common/               # 配置、主题、会话、显示映射
+│       │   ├── components/           # 平板面板、共用控制台
+│       │   ├── pages/                # Index / Login / phone / tablet
+│       │   ├── service/              # HttpClient、PlantApi、ControlApi、告警服务
+│       │   ├── store/                # AppStore、PrefStore
+│       │   └── model/                # 数据模型
+│       └── resources/                # 字符串、颜色、图标、页面配置
+└── Hardware/                         # OpenHarmony 设备端（Hi3861）
+    ├── README.md                     # 编译、烧录、引脚与联调说明
+    └── app/                          # 对应 OH 源码树 applications/sample/wifi-iot/app
+        ├── BUILD.gn                  # 选择参与编译的应用
+        ├── plant_gateway/            # 主节点（中控汇总网关）
+        ├── agv_node/                 # 从节点 AGV
+        ├── agv_servo_node/           # AGV 舵机/电机执行节点
+        └── dht11_test/ led_test/ led_interrupt_board/   # 外设验证例程
 ```
 
 ## 快速开始
@@ -122,6 +138,7 @@
 - Maven 3.6.1+
 - MySQL 8
 - DevEco Studio（运行前端）
+- OpenHarmony 4.1 源码 + Hi3861 工具链（仅编译设备端固件时需要）
 
 ### 2. 建库
 
@@ -187,6 +204,20 @@ static readonly DEFAULT_BASE_URL: string = 'http://你的电脑局域网IP:8080'
 ```
 
 3. 选择 Phone / Tablet 模拟器或真机运行；拉宽窗口即可切到平板大屏布局
+
+### 6. 设备端固件（可选）
+
+1. 把 `Hardware/app/*` 复制到 OpenHarmony 源码的 `applications/sample/wifi-iot/app/`
+2. 在 `app/BUILD.gn` 的 `features` 里**只保留一个**应用（`plant_gateway` / `agv_node` / `agv_servo_node`）
+3. 编译：
+
+```bash
+./build.sh --product-name wifiiot_hispark_pegasus --ccache --no-prebuilt-sdk
+```
+
+产物为 `out/hispark_pegasus/wifiiot_hispark_pegasus/Hi3861_wifiiot_app_allinone.bin`，用 DevEco Device Tool / HiBurn 烧录。
+
+> **烧录前必改**：仓库中的 WiFi 与 EMQX 凭据已替换为 `YOUR_WIFI_SSID` / `YOUR_MQTT_PASSWORD` 等占位值，搜 `YOUR_` 定位全部位置。引脚表、MQTT 报文与联调注意事项见 [`Hardware/README.md`](Hardware/README.md)。
 
 ## API 一览
 
